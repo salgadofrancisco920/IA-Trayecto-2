@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TYR — Inteligencia con carácter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+  <!-- Mockup de fondo: WhatsApp Web (solo contexto visual, no funcional) -->
+  <div class="wa-mock">
+    <div class="wa-sidebar">
+      <div class="wa-header">WhatsApp</div>
+      <div class="wa-chat-item"><div class="dot"></div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+      <div class="wa-chat-item"><div class="dot"></div><div class="lines"><div class="l1" style="width:55%"></div><div class="l2"></div></div></div>
+      <div class="wa-chat-item"><div class="dot"></div><div class="lines"><div class="l1" style="width:80%"></div><div class="l2" style="width:30%"></div></div></div>
+    </div>
+    <div class="wa-main">
+      <div class="wa-header"></div>
+      <div class="wa-canvas">
+        <div class="wa-bubble-msg">Equipo, ¿cerramos la propuesta para el cliente esta semana?</div>
+        <div class="wa-bubble-msg me">Sí, yo envío el borrador el jueves</div>
+        <div class="wa-bubble-msg">Perfecto, yo reviso presupuesto el viernes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toggle para mostrar/ocultar la barra de pruebas -->
+  <button class="dev-toggle active" id="devToggle" title="Mostrar/ocultar panel de pruebas">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+  </button>
+
+  <!-- Dev switcher: solo para pruebas internas del equipo -->
+  <div class="dev-switcher" id="devSwitcher">
+    <button data-state="empty" class="active">Vacío</button>
+    <button data-state="loading">Cargando</button>
+    <button data-state="response">Respuesta</button>
+    <button data-state="error">Error</button>
+  </div>
+
+  <div class="copied-toast" id="copiedToast">¡Copiado!</div>
+
+  <!-- Burbuja flotante TYR -->
+  <div class="tyr-bubble" id="tyrBubble" title="Abrir TYR">
+    <svg viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="metalGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#E2E8F0"/>
+          <stop offset="100%" stop-color="#8E9BAE"/>
+        </linearGradient>
+      </defs>
+      <g class="ring">
+        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#metalGrad)" stroke-width="2.5"/>
+        <circle cx="50" cy="50" r="38" fill="#161C24"/>
+      </g>
+      <g class="rune">
+        <line x1="50" y1="22" x2="50" y2="72" stroke="#00F0FF" stroke-width="5" stroke-linecap="round"/>
+        <line x1="50" y1="22" x2="34" y2="38" stroke="#00F0FF" stroke-width="5" stroke-linecap="round"/>
+        <line x1="50" y1="22" x2="66" y2="38" stroke="#00F0FF" stroke-width="5" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Panel principal -->
+  <div class="tyr-panel" id="tyrPanel">
+    <div class="panel-header">
+      <svg class="logo-sm" viewBox="0 0 100 100">
+        <g><circle cx="50" cy="50" r="45" fill="none" stroke="url(#metalGrad)" stroke-width="3"/><circle cx="50" cy="50" r="38" fill="#161C24"/></g>
+        <g><line x1="50" y1="22" x2="50" y2="72" stroke="#00F0FF" stroke-width="6" stroke-linecap="round"/><line x1="50" y1="22" x2="34" y2="38" stroke="#00F0FF" stroke-width="6" stroke-linecap="round"/><line x1="50" y1="22" x2="66" y2="38" stroke="#00F0FF" stroke-width="6" stroke-linecap="round"/></g>
+      </svg>
+      <div class="title-block">
+        <h1>TYR</h1>
+        <span class="badge"><span class="pulse"></span>Disponible</span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn emergency" title="Modo emergencia / pausar asistencia" onclick="window.tyrEmergency()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5z"/></svg>
+        </button>
+        <button class="icon-btn" title="Minimizar" onclick="window.tyrClose()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="icon-btn" title="Cerrar" onclick="window.tyrClose()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-body" id="panelBody"><!-- contenido inyectado por TyrStateManager --></div>
+
+    <div class="composer" id="composer">
+      <input type="text" id="composerInput" placeholder="Escríbele algo a TYR...">
+      <button id="composerSend" title="Enviar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+<script>
+/* =========================================================================
+   TYR — Prototipo de interfaz (Etapa 1, arquitectura escalable)
+
+   Capas:
+   1. ESTADO       -> TyrStateManager (única fuente de verdad)
+   2. AGENTE       -> runTyrAgent()   (hoy simulado; mañana llama al backend)
+   3. RENDERIZADO  -> render*() + renderThread()
+   4. EVENTOS      -> listeners al final del archivo
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------
+   1) ESTADO — TyrStateManager
+   Única fuente de verdad: estado actual + historial de turnos.
+   Cualquier vista (render*) lee de aquí; nadie muta el DOM sin pasar
+   primero por el manager, así los estados nunca quedan "sueltos".
+   --------------------------------------------------------------------- */
+const TyrStateManager = (() => {
+  let state = {
+    current: 'empty',        // 'empty' | 'loading' | 'response' | 'error'
+    history: [],             // [{role:'user'|'tyr', text, ts}]
+    tone: 'Amigable',
+    lastResponseData: null,  // último payload de respuesta del agente
+    lastError: null,         // {type} cuando current === 'error'
+    forceErrorNext: false,   // flag de prueba: forzar error en la próxima carga
+  };
+  const listeners = [];
+
+  function subscribe(fn){ listeners.push(fn); }
+  function notify(){ listeners.forEach(fn => fn(state)); }
+
+  function addTurn(role, text){
+    state.history.push({ role, text, ts: Date.now() });
+  }
+
+  function set(partial){
+    state = { ...state, ...partial };
+    notify();
+  }
+
+  function reset(){
+    set({ current:'empty', history:[], lastResponseData:null, lastError:null, forceErrorNext:false });
+  }
+
+  return { get: () => state, addTurn, set, reset, subscribe };
+})();
+
+/* ---------------------------------------------------------------------
+   2) AGENTE — capa de simulación (a reemplazar por el backend real)
+   runTyrAgent(payload) imita la forma de una llamada async real:
+   devuelve una Promise que resuelve con datos de respuesta o rechaza
+   con { type } cuando algo falla. En producción, el cuerpo de esta
+   función se sustituye por un fetch() al backend proxy — el resto
+   de la app (transiciones, render, UI) no cambia.
+   --------------------------------------------------------------------- */
+const loadingPhrases = [
+  'TYR está analizando la conversación...',
+  'Extrayendo decisiones y compromisos...',
+  'Organizando la información...',
+  'Preparando una respuesta para ti...'
+];
+
+const tonedReplies = {
+  Formal: 'Estimado equipo, confirmo que enviaré el borrador de la propuesta el jueves y quedo atento a la revisión del presupuesto del viernes.',
+  Amigable: '¡Dale! Yo les paso el borrador el jueves sin falta 🙌 y seguimos con el presupuesto el viernes.',
+  Profesional: 'Confirmado: el borrador queda listo el jueves. Avísenme si necesitan el presupuesto revisado antes del viernes.',
+  Directo: 'Borrador el jueves. Presupuesto el viernes. Cerramos.',
+  Creativo: 'Jueves: nace el borrador ✍️. Viernes: el presupuesto toma forma. ¡Vamos con todo!'
+};
+
+function runTyrAgent(payload){
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (payload.forceError) {
+        reject({ type: payload.forceErrorType || 'Tiempo de espera agotado' });
+        return;
+      }
+      resolve({
+        summary: {
+          tema: 'Cierre de propuesta comercial para un cliente',
+          contexto: 'El equipo coordina la entrega del borrador y la revisión de presupuesto antes de enviar la propuesta final.',
+          participantes: 'Tú, Camila (líder de cuenta), Andrés (finanzas)',
+          puntosClave: ['El cliente espera la propuesta cerrada esta semana', 'Falta validar el presupuesto final con finanzas'],
+          decisiones: ['El borrador se envía el jueves'],
+          pendientes: ['¿El cliente pidió algún ajuste de alcance?'],
+          compromisos: ['Tú → enviar borrador — jueves', 'Andrés → revisar presupuesto — viernes']
+        },
+        messagesAnalyzed: 48
+      });
+    }, 2500);
+    // referencia guardada para poder cancelar si el usuario cambia de estado antes de resolver
+    runTyrAgent._lastTimer = timer;
+  });
+}
+function cancelPendingAgentCall(){
+  if (runTyrAgent._lastTimer) { clearTimeout(runTyrAgent._lastTimer); runTyrAgent._lastTimer = null; }
+}
+
+/* ---------------------------------------------------------------------
+   3) RENDERIZADO
+   --------------------------------------------------------------------- */
+const panelBody  = document.getElementById('panelBody');
+const composer   = document.getElementById('composer');
+const devButtons = document.querySelectorAll('#devSwitcher button');
+let loadingInterval = null;
+
+function renderThread(){
+  const { history } = TyrStateManager.get();
+  if (!history.length) return '';
+  return `<div class="thread">${history.map(t => `
+    <div class="turn ${t.role}">
+      <span class="who">${t.role === 'user' ? 'Tú' : 'TYR'}</span>${escapeHtml(t.text)}
+    </div>`).join('')}</div>`;
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderEmpty(){
+  composer.style.display = 'flex';
+  toggleComposerEnabled(true);
+  panelBody.innerHTML = `
+    ${renderThread()}
+    <p class="greeting">Hola, soy <strong>TYR</strong>. Puedo leer este chat por ti y decirte qué importa de verdad. ¿Por dónde empezamos?</p>
+    <div class="ai-banner">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFB020" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Soy una IA y puedo cometer errores. Revisa siempre mis resúmenes y respuestas antes de confiar en ellos.
+    </div>
+    <div class="chips">
+      <button class="chip" data-prompt="Resumir una conversación">Resumir una conversación</button>
+      <button class="chip" data-prompt="Ayúdame a responder">Ayúdame a responder</button>
+      <button class="chip" data-prompt="Dame ideas">Dame ideas</button>
+      <button class="chip" data-prompt="Organiza mis tareas">Organiza mis tareas</button>
+      <button class="chip" data-prompt="Analiza este chat">Analiza este chat</button>
+    </div>
+    <button class="sim-btn" id="simLongChat">Simular lectura de chat largo (65 mensajes)</button>
+  `;
+  panelBody.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => startRequest(c.dataset.prompt)));
+  document.getElementById('simLongChat').addEventListener('click', () => startRequest('Analiza este chat largo (65 mensajes)'));
+}
+
+function renderLoading(){
+  composer.style.display = 'flex';
+  toggleComposerEnabled(false);
+  panelBody.innerHTML = `
+    ${renderThread()}
+    <div class="loading-wrap">
+      <svg class="rune-spin" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#2A3441" stroke-width="4"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#00F0FF" stroke-width="4" stroke-linecap="round" stroke-dasharray="60 200"/>
+        <line x1="50" y1="26" x2="50" y2="74" stroke="#00F0FF" stroke-width="5" stroke-linecap="round"/>
+        <line x1="50" y1="26" x2="34" y2="42" stroke="#00F0FF" stroke-width="5" stroke-linecap="round"/>
+        <line x1="50" y1="26" x2="66" y2="42" stroke="#00F0FF" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <div class="loading-text" id="loadingText">${loadingPhrases[0]}</div>
+      <div class="loading-actions">
+        <button class="action-btn danger-ghost" id="btnForceError">Simular fallo en carga</button>
+      </div>
+    </div>
+  `;
+  let i = 0;
+  const textEl = document.getElementById('loadingText');
+  loadingInterval = setInterval(() => {
+    i = (i + 1) % loadingPhrases.length;
+    textEl.style.opacity = 0;
+    setTimeout(() => { textEl.textContent = loadingPhrases[i]; textEl.style.opacity = 1; }, 150);
+  }, 1500);
+  document.getElementById('btnForceError').addEventListener('click', () => {
+    cancelPendingAgentCall();
+    resolveToError('Error de lectura del DOM');
+  });
+}
+
+function renderResponse(){
+  composer.style.display = 'flex';
+  toggleComposerEnabled(true);
+  const { lastResponseData, tone } = TyrStateManager.get();
+  const s = lastResponseData.summary;
+  panelBody.innerHTML = `
+    ${renderThread()}
+    <div class="summary-card">
+      <h2>Resumen del hilo</h2>
+      <div class="summary-row"><div class="k">Tema</div><div class="v">${s.tema}</div></div>
+      <div class="summary-row"><div class="k">Contexto</div><div class="v">${s.contexto}</div></div>
+      <div class="summary-row"><div class="k">Participantes</div><div class="v">${s.participantes}</div></div>
+      <div class="summary-row"><div class="k">Puntos clave</div><ul>${s.puntosClave.map(p => `<li>${p}</li>`).join('')}</ul></div>
+      <div class="summary-row"><div class="k">Decisiones tomadas</div><ul>${s.decisiones.map(d => `<li class="tag-done">✓ ${d}</li>`).join('')}</ul></div>
+      <div class="summary-row"><div class="k">Preguntas pendientes</div><ul>${s.pendientes.map(p => `<li class="tag-pending">${p}</li>`).join('')}</ul></div>
+      <div class="summary-row"><div class="k">Compromisos</div><ul>${s.compromisos.map(c => `<li>${c}</li>`).join('')}</ul></div>
+    </div>
+
+    <div class="tone-select" id="toneSelect">
+      ${Object.keys(tonedReplies).map(t => `<button class="tone-btn ${t === tone ? 'active' : ''}" data-tone="${t}">${t}</button>`).join('')}
+    </div>
+    <div class="reply-box" id="replyBox">${tonedReplies[tone]}</div>
+
+    <div class="sources-block">
+      <div class="source-item">
+        <b>Chat activo de WhatsApp Web</b><br>
+        ${lastResponseData.messagesAnalyzed} mensajes analizados. Fuente primaria y verificable dentro de esta conversación.
+      </div>
+      <div class="source-item">
+        <span class="fictional-tag">[Fuente ficticia de maquetación]</span><br>
+        <b>Bitácora Comercial Q4 — Propuestas y Presupuestos</b> (documento interno ficticio)<br>
+        <a href="https://docs.tyr-internal.example/propuestas-q4" target="_blank" rel="noopener">docs.tyr-internal.example/propuestas-q4</a><br>
+        Consultado: 19 nov 2026 · Fragmento: "Presupuestos de cuentas comerciales deben validarse con finanzas antes del envío al cliente."
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" id="btnDetail">Resumen más detallado</button>
+      <button class="action-btn" id="btnCopy">Copiar resumen</button>
+      <button class="action-btn primary" id="btnInsert">Insertar en WhatsApp</button>
+    </div>
+  `;
+
+  panelBody.querySelectorAll('.tone-btn').forEach(b => b.addEventListener('click', () => {
+    TyrStateManager.set({ tone: b.dataset.tone });
+    panelBody.querySelectorAll('.tone-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('replyBox').textContent = tonedReplies[b.dataset.tone];
+  }));
+  document.getElementById('btnCopy').addEventListener('click', () => {
+    const text = document.getElementById('replyBox').textContent;
+    navigator.clipboard?.writeText(text).catch(() => {});
+    showToast();
+  });
+  document.getElementById('btnDetail').addEventListener('click', () => {
+    document.querySelector('.summary-card h2').textContent = 'Resumen detallado del hilo';
+  });
+  document.getElementById('btnInsert').addEventListener('click', () => {
+    const input = document.getElementById('composerInput');
+    input.value = document.getElementById('replyBox').textContent;
+    input.focus();
+  });
+}
+
+function renderError(){
+  composer.style.display = 'flex';
+  toggleComposerEnabled(false);
+  const { lastError } = TyrStateManager.get();
+  panelBody.innerHTML = `
+    ${renderThread()}
+    <div class="error-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#FF4D4D" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>
+      <p>¡Ups! Parece que perdimos la conexión. No pude cargar mi respuesta. Comprueba tu conexión a internet e inténtalo nuevamente.</p>
+      <select class="fail-select" id="failType">
+        <option ${lastError?.type === 'Sin red' ? 'selected' : ''}>Sin red</option>
+        <option ${lastError?.type === 'Tiempo de espera agotado' ? 'selected' : ''}>Tiempo de espera agotado</option>
+        <option ${lastError?.type === 'Error de lectura del DOM' ? 'selected' : ''}>Error de lectura del DOM</option>
+      </select>
+      <div class="error-actions">
+        <button class="action-btn primary" id="btnRetry">Volver a intentar</button>
+        <button class="action-btn" id="btnHumanControl">Control humano / Desactivar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('btnRetry').addEventListener('click', () => {
+    const chosenType = document.getElementById('failType').value;
+    retryFromError(chosenType);
+  });
+  document.getElementById('btnHumanControl').addEventListener('click', () => TyrStateManager.reset());
+}
+
+const renderers = { empty: renderEmpty, loading: renderLoading, response: renderResponse, error: renderError };
+
+function render(state){
+  devButtons.forEach(b => b.classList.toggle('active', b.dataset.state === state.current));
+  if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+  renderers[state.current]();
+}
+TyrStateManager.subscribe(render);
+
+function toggleComposerEnabled(enabled){
+  document.getElementById('composerInput').disabled = !enabled;
+  document.getElementById('composerSend').disabled = !enabled;
+}
+
+/* ---------------------------------------------------------------------
+   TRANSICIONES EXPLÍCITAS carga -> respuesta / carga -> error
+   Son el punto donde, en la Etapa 2, runTyrAgent() se conecta a un
+   backend real: el resto del flujo (UI, render, historial) no cambia.
+   --------------------------------------------------------------------- */
+function resolveToResponse(data){
+  TyrStateManager.addTurn('tyr', 'Aquí tienes el resumen y una sugerencia de respuesta.');
+  TyrStateManager.set({ current: 'response', lastResponseData: data, lastError: null });
+}
+function resolveToError(type){
+  TyrStateManager.set({ current: 'error', lastError: { type } });
+}
+
+function startRequest(promptText, forceError){
+  if (promptText) {
+    TyrStateManager.addTurn('user', promptText);
+    const input = document.getElementById('composerInput');
+    if (input) input.value = '';
+  }
+  TyrStateManager.set({ current: 'loading' });
+  runTyrAgent({ prompt: promptText, forceError, forceErrorType: 'Tiempo de espera agotado' })
+    .then(data => resolveToResponse(data))
+    .catch(err => resolveToError(err.type));
+}
+
+function retryFromError(simulatedType){
+  TyrStateManager.set({ current: 'loading' });
+  runTyrAgent({ prompt: '(reintento)', forceError: false })
+    .then(data => resolveToResponse(data))
+    .catch(err => resolveToError(err.type || simulatedType));
+}
+
+function showToast(){
+  const t = document.getElementById('copiedToast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+/* ---------------------------------------------------------------------
+   4) EVENTOS
+   --------------------------------------------------------------------- */
+document.getElementById('tyrBubble').addEventListener('click', () => {
+  document.getElementById('tyrPanel').classList.add('open');
+});
+window.tyrClose = function(){ document.getElementById('tyrPanel').classList.remove('open'); };
+window.tyrEmergency = function(){
+  cancelPendingAgentCall();
+  TyrStateManager.reset();
+  setTimeout(() => {
+    const banner = panelBody.querySelector('.ai-banner');
+    if (banner) banner.innerHTML = '<b>Modo pausa activado.</b> TYR no leerá ni sugerirá nada hasta que lo reactives.';
+  }, 0);
+};
+
+document.getElementById('composerSend').addEventListener('click', () => {
+  const v = document.getElementById('composerInput').value.trim();
+  if (v) startRequest(v);
+});
+document.getElementById('composerInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const v = e.target.value.trim();
+    if (v) startRequest(v);
+  }
+});
+
+devButtons.forEach(b => b.addEventListener('click', () => {
+  cancelPendingAgentCall();
+  if (b.dataset.state === 'response' && !TyrStateManager.get().lastResponseData) {
+    // si aún no hay datos de respuesta, generamos unos de ejemplo al vuelo
+    runTyrAgent({}).then(data => TyrStateManager.set({ current: 'response', lastResponseData: data }));
+  } else {
+    TyrStateManager.set({ current: b.dataset.state });
+  }
+}));
+
+document.getElementById('devToggle').addEventListener('click', (e) => {
+  const switcher = document.getElementById('devSwitcher');
+  const btn = e.currentTarget;
+  switcher.classList.toggle('hidden');
+  btn.classList.toggle('active');
+});
+
+/* Estado inicial */
+render(TyrStateManager.get());
+</script>
+</body>
+</html>
